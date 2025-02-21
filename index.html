@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8">
+  <title>CFG Weather application Group9:Demo 10022025 final</title>
+  <link rel="stylesheet" href="./style.css">
+
+</head>
+<body>
+<!-- partial:index.partial.html -->
+<head>
+  <!--   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <!-- <script src="app.js" defer></script> -->
+  <datalist id="city-datalist">
+    <option value="Amsterdam">
+    <option value="Athens">
+    <option value="Barcelona">
+    <option value="Berlin">
+    <option value="Dubai">
+    <option value="Dublin">
+    <option value="Lisbon">
+    <option value="London">
+    <option value="Madrid">
+    <option value="New York">
+    <option value="Paris">
+    <option value="Prague">
+    <option value="Rome">
+    <option value="Venice">
+  </datalist>
+</head>
+
+<body>
+  <h1> Find the warmest destination in the next seven days </h1>
+  <div class=columns>
+    <div class=sidebar>
+
+      <label for="home-city-input">Enter your home city: </label>
+      <input id="home-city-input" autoComplete="on" list="city-datalist" />
+      <br>
+      <br>
+      <label for="city-input">Enter your destinations: </label>
+      <input id="city-input" autoComplete="on" list="city-datalist" />
+      <div id=city-error>
+        <!--         LJ -->
+      </div>
+      <ul id=user-destinations>
+
+      </ul>
+
+    </div>
+    <!--     <div class=rightbar> -->
+    <div id=chart-container style="width: 50%; height: 475px;">
+      <!--       <canvas id="myChart"></canvas> -->
+    </div>
+
+    <div id=recommendations-container style="width: 25%;">
+      <button id="createButton" class="hover-effect">Create Recommendations</button>
+
+      <!--       <div class=recommendations id="recommendations"> </div> -->
+    </div>
+</body>
+<!-- partial -->
+  <script  src="./script.js"></script>
+
+</body>
+</html>
