@@ -2,20 +2,20 @@
 const average_temperatures = {}; //global variable for average temperatures
 const average_temperatures_feelslike = {}; //global variable for average feelslike temperatures
 const cityColors = {
-  Amsterdam: "hsl(0, 70%, 50%)", // Red
-  Athens: "hsl(200, 70%, 50%)", // Yellow
-  Barcelona: "hsl(300, 70%, 50%)", // Magenta
-  Berlin: "hsl(120, 70%, 50%)", // Green
-  Dubai: "hsl(180, 70%, 50%)", // Cyan
-  Dublin: "hsl(240, 70%, 50%)", // Blue
-  Lisbon: "hsl(30, 70%, 50%)", // Orange
-  London: "hsl(270, 70%, 50%)", // Purple
-  Madrid: "hsl(100, 70%, 50%)", // Lime
-  "New York": "hsl(210, 70%, 50%)", // Sky Blue
-  Paris: "hsl(270, 50%, 75%)", //Lavender
-  Prague: "hsl(180, 50%, 50%)", //Teal
-  Rome: "hsl(120, 50%, 25%)", //Olive
-  Venice: "hsl(350, 70%, 25%)" //Rose
+  // Amsterdam: "hsl(0, 70%, 50%)", // Red
+  // Athens: "hsl(200, 70%, 50%)", // Yellow
+  // Barcelona: "hsl(300, 70%, 50%)", // Magenta
+  // Berlin: "hsl(120, 70%, 50%)", // Green
+  // Dubai: "hsl(180, 70%, 50%)", // Cyan
+  // Dublin: "hsl(240, 70%, 50%)", // Blue
+  // Lisbon: "hsl(30, 70%, 50%)", // Orange
+  // London: "hsl(270, 70%, 50%)", // Purple
+  // Madrid: "hsl(100, 70%, 50%)", // Lime
+  // "New York": "hsl(210, 70%, 50%)", // Sky Blue
+  // Paris: "hsl(270, 50%, 75%)", //Lavender
+  // Prague: "hsl(180, 50%, 50%)", //Teal
+  // Rome: "hsl(120, 50%, 25%)", //Olive
+  // Venice: "hsl(350, 70%, 25%)" //Rose
 };
 
 // Generate a random color for cities not in the list
@@ -161,8 +161,9 @@ function processCitySelection(selection, inputId) {
   if (true) {
     // console.log("Autocomplete option selected:", event.target.value);
 
+    const isHomeCity = inputId === "home-city-input"; // Check if the input is for home city
     //Handles the selection of a valid city in either input box
-    if (inputId === "home-city-input") {
+    if (isHomeCity) {
       homeCity = city;
     }
 
@@ -195,7 +196,7 @@ function processCitySelection(selection, inputId) {
       .then((data) => {
         console.log("cityWeatherData: ", data);
         console.log("cityInput: ", cityInput);
-        addDataToGraph(data, cityInput);
+        addDataToGraph(data, cityInput, isHomeCity);
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -417,7 +418,7 @@ function createDailydata(data, cityName) {
   return dailyData;
 }
 
-function addDataToGraph(data, cityName) {
+function addDataToGraph(data, cityName, isHomeCity) {
   const dailyData = createDailydata(data, cityName);
 
   console.log("Data Daily equals: ", calculateAverage(dailyData.temperature));
@@ -440,7 +441,7 @@ function addDataToGraph(data, cityName) {
     createChart(dailyData) // Create the chart if it doesn't exist
   }
 
-  addDatasetToChart(myChart, dailyData, cityName); // Add the chart
+  addDatasetToChart(myChart, dailyData, cityName, isHomeCity); // Add the chart
 }
 
 function createChart(dailyData) {
@@ -506,8 +507,18 @@ function createChart(dailyData) {
       });
 }
 
-function addDatasetToChart(chart, data, cityName) {
-  let color = createCityColor(cityName); //getRandomColor();//0702 LJ
+function addDatasetToChart(chart, data, cityName, isHomeCity) {
+  let color;
+
+  if (isHomeCity) {
+    // Black for home city
+    color = "black";
+  }
+
+  else {
+    color = createCityColor(cityName); //getRandomColor();//0702 LJ
+  }
+
   chart.data.datasets.push({
     label: `${cityName}`,
     data: data.temperature,
