@@ -18,27 +18,314 @@ const cityColors = {
   Venice: "hsl(350, 70%, 25%)" //Rose
 };
 
+// Generate a random color for cities not in the list
+function createCityColor(cityName) {
+  // Extract just the city name from the format "City, Region, Country"
+  const city = cityName.split(',')[0].trim();
+  
+  // If the city has a predefined color, use it
+  if (cityColors[city]) {
+    return cityColors[city];
+  }
+  
+  // Otherwise, generate a random color
+  const hue = Math.floor(Math.random() * 360);
+  const saturation = 70;
+  const lightness = 50;
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+
 let myChart; //global variable for the chart
 let homeCity; //global variable for the home city
 
-async function fetchCityWeatherData(city) {
-  try {
-    // Get coordinates for the city
-    const geocodingParams = new URLSearchParams({
-      name: city,
-      count: "1",
-      language: "en",
-      format: "json"
-    });
-    const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?${geocodingParams}`;
-    const geocodingResponse = await fetch(geocodingUrl);
-    const geocodingData = await geocodingResponse.json();
+/////
 
-    if (!geocodingData.results || geocodingData.results.length === 0) {
-      throw new Error("City not found");
+document.addEventListener("DOMContentLoaded", function () {
+  // Wait for the DOM to be ready
+
+  const selectedItemsContainer = document.createElement("div");
+  selectedItemsContainer.id = "selected-items";
+  document
+    .querySelector("#home-city-input")
+    .parentNode.appendChild(selectedItemsContainer);
+
+     // Initialize autoComplete for both input fields
+  initializeAutocomplete("#home-city-input");
+  initializeAutocomplete("#city-input");
+
+function initializeAutocomplete(selector) {
+  const autoCompleteInstance = new autoComplete({
+    selector: selector,
+    placeHolder: "Search for cities...",
+    threshold: 1,
+    debounce: 300,
+    data: {
+      src: fetchMatchingCities, // Example data
+      keys: ["label"],
+      cache: false
+    },
+    resultsList: {
+      element: (list, data) => {
+        if (data.results.length === 0) {
+          const message = document.createElement("li");
+          message.setAttribute("class", "no_result");
+          message.innerHTML = `<span>No results found for "${data.query}"</span>`;
+          list.appendChild(message);
+        }
+      },
+      noResults: true,
+      maxResults: 10,
+      tabSelect: true
+    },
+    resultItem: {
+      element: (item, data) => {
+        item.innerHTML = `<span>${data.match}</span>`;
+      },
+      highlight: true
+    },
+
+    events: {
+      input: {
+        focus: () => {
+          if (autoCompleteInstance.isOpen) autoCompleteInstance.start();
+        }
+      }
+    }
+  });
+
+// Handle selection for autoComplete
+  autoCompleteInstance.input.addEventListener("selection", function (event) {
+    const feedback = event.detail;
+    const selectedValue = feedback.selection.value;
+    const inputElement = autoCompleteInstance.input; // Get the input element
+
+    // Call the processCitySelection function
+    console.log("Selected value:", selectedValue);
+    console.log("Input element ID:", inputElement);
+    processCitySelection(selectedValue, inputElement.id);
+    
+    // // Clear the input field after selection
+    autoCompleteInstance.input.value = "";
+    // Set the input value, which will trigger the existing 'input' event listener
+    // autoCompleteInstance.input.value = selectedValue.label; // This is the KEY CHANGE
+
+
+    
+  });
+
+}
+
+function processCitySelection(selection, inputId) {
+
+  const city = selection.label; // Extract the city name from the selection object
+  //if they delete the repeated city, error goes away
+
+  // const cityDatalist = document.getElementById("city-datalist");
+
+  //EX 2 -ERROR CHECKING FOR IF CITY EXISTS
+  //2a checks for existing cities in the HTML and adds them to an array... //*
+  const existingCities = Array.from(
+    document.getElementById("user-destinations").children
+  ).map((listItem) => listItem.getAttribute("data-city"));
+
+  //2b displays error message.
+  //*
+  if (existingCities.includes(city)) {
+    document.getElementById("city-error").textContent =
+      "City already exists.  Please try again!";
+
+    //2c Find the corresponding list item and make it flash
+    const listItems = document.getElementById("user-destinations").children;
+    Array.from(listItems).forEach((listItem) => {
+      if (listItem.getAttribute("data-city") === city) {
+        // Add the flashing class
+        listItem.classList.add("flash-error"); //2d it adds the class to the DOM
+
+        //2e Remove the flashing class after 3 seconds
+        setTimeout(() => {
+          listItem.classList.remove("flash-error"); //removes the class from the DOM
+        }, 3000);
+      }
+    });
+
+    return; // Exit the function
+  }
+
+  ////
+  //-creates an array of the cities in the datalist ['London', 'Berlin', .....]
+  // const options = Array.from(cityDatalist.options).map((opt) => opt.value);
+
+  //If the value from the input box is included in the array options execute the code
+  //to assign the home city
+  if (true) {
+    // console.log("Autocomplete option selected:", event.target.value);
+
+    //Handles the selection of a valid city in either input box
+    if (inputId === "home-city-input") {
+      homeCity = city;
     }
 
-    const { latitude, longitude } = geocodingData.results[0];
+    //The error is cleared when the user inputs a valid city
+    document.getElementById("city-error").textContent = ""; //LJ 0702
+
+    //NO ERRORS
+    //Ex3  Dynamically creating the user-destination list items
+    //Already created an empty list in the HTML to contain this
+    const listItem = document.createElement("li");
+    listItem.textContent = city;
+
+    //2904
+    
+    console.log("Home City: ", homeCity);
+    console.log("City: ", city);
+
+    document.getElementById("user-destinations").appendChild(listItem);
+
+    listItem.setAttribute("data-city", city); //adding the city as an attribute to the list item, so we can use it later.
+    // console.log("the current value of city is: ", city);
+
+    const cityInput = city;
+
+    //2904
+    console.log("CityInput: ", cityInput);
+
+    //EX 4 -fetches the weather data for cityInput and parses it to the addDatatoGraph function
+    fetchCityWeatherData(selection)
+      .then((data) => {
+        console.log("cityWeatherData: ", data);
+        console.log("cityInput: ", cityInput);
+        addDataToGraph(data, cityInput);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+
+    if (inputId === "city-input") {
+      document.getElementById("city-input").value = ""; //resets the city-input box to blank
+    }
+
+    //Ex 5 -each list item gets a remove button that is an 'x'
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "x";
+    removeButton.className = "remove-item";
+    listItem.appendChild(removeButton);
+
+    //Ex 6 -Remove the city and data from the graph
+    //0702 LJ
+    removeButton.onclick = function () {
+      listItem.remove(); //removes the list item
+
+      const cityToRemove = listItem.getAttribute("data-city");
+
+      if (cityToRemove === homeCity) {
+        homeCity = null;
+        // home - cit;
+      }
+
+      //deletes the city from the average and feels like
+      delete average_temperatures[cityToRemove];
+      delete average_temperatures_feelslike[cityToRemove];
+
+      // Get the index of the dataset to remove
+      let datasetIndexToRemove = null;
+      myChart.data.datasets.forEach((dataset, index) => {
+        if (dataset.label.includes(cityToRemove)) {
+          datasetIndexToRemove = index;
+        }
+      });
+
+      // Remove the dataset from the chart
+      if (datasetIndexToRemove !== null) {
+        myChart.data.datasets.splice(datasetIndexToRemove, 1);
+        myChart.data.datasets.splice(datasetIndexToRemove, 1); // Remove the feels like
+
+        myChart.update();
+      }
+    };
+  }
+}
+
+//ADD EVENT LISTENERS TO BOTH INPUT BOXES
+//EX 1
+// const cityInputs = document.querySelectorAll("#home-city-input, #city-input");
+
+// cityInputs.forEach((input) => {
+//   input.addEventListener("input", function (event) {
+//     //This section is now removed to stop list items and charts from appearing with every keystroke.
+//     // Instead they will only appear after the user has made the selection
+//   });
+// });
+});
+
+async function fetchMatchingCities(querystring) {
+  console.log("This is the Query", querystring);
+  try {
+    // Build the URL with the querystring parameter
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+      querystring
+    )}`;
+
+    // Fetch data from the API
+    const response = await fetch(url);
+    // console.log("Response from API:", response); // Log the response object
+
+    // Check if the response is successful
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // Parse the JSON response
+    const data = await response.json();
+    console.log("Data from API:", data); // Log the parsed data
+
+    console.log("Results from API:", data.results); // Log the results array
+
+    // Extract only the city names from results
+    // (city) => `${city.name}, ${city.admin1}, ${city.country}`
+    if (data.results && Array.isArray(data.results)) {
+      const cities = data.results.map((city) => ({
+        label: `${city.name}, ${city.admin1}, ${city.country}`,
+        latitude: city.latitude,
+        longitude: city.longitude
+      }));
+      console.log("Processed cities data:", cities);
+      return cities;
+    }
+
+    // Return empty array if no results
+    return [];
+  } catch (error) {
+    console.error("Error fetching matching cities:", error);
+    return [];
+  }
+}
+
+////Need some code here to set city to the city we selected from the list in cities
+//How can we match the selected city to the one in the list?
+
+
+async function fetchCityWeatherData(selection) {
+  try {
+    // Get coordinates for the city
+    // const geocodingParams = new URLSearchParams({
+    //   name: city,
+    //   count: "1",
+    //   language: "en",
+    //   format: "json"
+    // });
+    // const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?${geocodingParams}`;
+    // const geocodingResponse = await fetch(geocodingUrl);
+    // const geocodingData = await geocodingResponse.json();
+
+    // if (!geocodingData.results || geocodingData.results.length === 0) {
+    //   throw new Error("City not found");
+    // }
+
+
+    // const { latitude, longitude } = geocodingData.results[0];
+
+    const { latitude, longitude } = selection; // Extract latitude and longitude from the selection object
 
     const baseUrl = "https://api.open-meteo.com/v1/forecast";
     const params = new URLSearchParams({
@@ -92,7 +379,7 @@ function createDayfromDate(dateString) {
   return dayName;
 }
 
-console.log("The day for this date is:", createDayfromDate("2025-02-10"));
+// console.log("The day for this date is:", createDayfromDate("2025-02-10"));
 
 function formatDate(dateString) {
   const date = new Date(dateString);
@@ -133,7 +420,7 @@ function createDailydata(data, cityName) {
 function addDataToGraph(data, cityName) {
   const dailyData = createDailydata(data, cityName);
 
-  // console.log("Data Daily equals: ", calculateAverage(dailyData.temperature));
+  console.log("Data Daily equals: ", calculateAverage(dailyData.temperature));
   // console.log("Data Daily temperature: ", dailyData.temperature);
   // console.log("Length:", dailyData.temperature.length);
   // console.log("Sample values:", dailyData.temperature.slice(0, 5));
@@ -239,9 +526,7 @@ function addDataToGraph(data, cityName) {
   }
 }
 
-function createCityColor(cityName) {
-  return cityColors[cityName];
-}
+
 
 function addDatasetToChart(chart, data, cityName) {
   let color = createCityColor(cityName); //getRandomColor();//0702 LJ
@@ -267,118 +552,121 @@ function addDatasetToChart(chart, data, cityName) {
 ///////////////////////////////
 //ADD EVENT LISTENERS TO BOTH INPUT BOXES
 //EX 1
-const cityInputs = document.querySelectorAll("#home-city-input, #city-input");
+// const cityInputs = document.querySelectorAll("#home-city-input, #city-input");
 
-cityInputs.forEach((input) => {
-  input.addEventListener("input", function (event) {
-    //if they delete the repeated city, error goes away
-    if (event.target.value === "") {
-      document.getElementById("city-error").textContent = "";
-    }
-    const cityDatalist = document.getElementById("city-datalist");
+// cityInputs.forEach((input) => {
+//   input.addEventListener("input", function (event) {
+//     //if they delete the repeated city, error goes away
+//     if (event.target.value === "") {
+//       document.getElementById("city-error").textContent = "";
+//       return;  //Early return if the input box is blank.
+     
+    
+//     }
+//     // const cityDatalist = document.getElementById("city-datalist");
 
-    //EX 2 -ERROR CHECKING FOR IF CITY EXISTS
-    //2a checks for existing cities in the HTML and adds them to an array
+//     //EX 2 -ERROR CHECKING FOR IF CITY EXISTS
+//     //2a checks for existing cities in the HTML and adds them to an array
 
-    //*
-    const existingCities = Array.from(
-      document.getElementById("user-destinations").children
-    ).map((listItem) => listItem.getAttribute("data-city"));
+//     //*
+//     const existingCities = Array.from(
+//       document.getElementById("user-destinations").children
+//     ).map((listItem) => listItem.getAttribute("data-city"));
 
-    //2b displays error message.
-    //*
-    if (existingCities.includes(event.target.value)) {
-      document.getElementById("city-error").textContent =
-        "City already exists.  Please try again!";
+//     //2b displays error message.
+//     //*
+//     if (existingCities.includes(event.target.value)) {
+//       document.getElementById("city-error").textContent =
+//         "City already exists.  Please try again!";
 
-      //2c Find the corresponding list item and make it flash
-      const listItems = document.getElementById("user-destinations").children;
-      Array.from(listItems).forEach((listItem) => {
-        if (listItem.getAttribute("data-city") === event.target.value) {
-          // Add the flashing class
-          listItem.classList.add("flash-error"); //2d it adds the class to the DOM
+//       //2c Find the corresponding list item and make it flash
+//       const listItems = document.getElementById("user-destinations").children;
+//       Array.from(listItems).forEach((listItem) => {
+//         if (listItem.getAttribute("data-city") === event.target.value) {
+//           // Add the flashing class
+//           listItem.classList.add("flash-error"); //2d it adds the class to the DOM
 
-          //2e Remove the flashing class after 3 seconds
-          setTimeout(() => {
-            listItem.classList.remove("flash-error"); //removes the class from the DOM
-          }, 3000);
-        }
-      });
+//           //2e Remove the flashing class after 3 seconds
+//           setTimeout(() => {
+//             listItem.classList.remove("flash-error"); //removes the class from the DOM
+//           }, 3000);
+//         }
+//       });
 
-      return; // Exit the function
-    }
+//       return; // Exit the function
+//     }
 
-    ////
-    //-creates an array of the cities in the datalist ['London', 'Berlin', .....]
-    const options = Array.from(cityDatalist.options).map((opt) => opt.value);
+//     ////
+//     //-creates an array of the cities in the datalist ['London', 'Berlin', .....]
+//     // const options = Array.from(cityDatalist.options).map((opt) => opt.value);
 
-    //If the value from the input box is included in the array options execute the code
-    //to assign the home city
-    if (options.includes(event.target.value)) {
-      // console.log("Autocomplete option selected:", event.target.value);
+//     //If the value from the input box is included in the array options execute the code
+//     //to assign the home city
+//     if (true || options.includes(event.target.value)) {
+//       // console.log("Autocomplete option selected:", event.target.value);
 
-      //Handles the selection of a valid city in either input box
-      if (event.target.id === "home-city-input") {
-        homeCity = event.target.value;
-      }
+//       //Handles the selection of a valid city in either input box
+//       if (event.target.id === "home-city-input") {
+//         homeCity = event.target.value;
+//       }
 
-      //The error is cleared when the user inputs a valid city
-      document.getElementById("city-error").textContent = ""; //LJ 0702
+//       //The error is cleared when the user inputs a valid city
+//       document.getElementById("city-error").textContent = ""; //LJ 0702
 
-      //NO ERRORS
-      //Ex3  Dynamically creating the user-destination list items
-      //Already created an empty list in the HTML to contain this
-      const listItem = document.createElement("li");
-      listItem.textContent = event.target.value;
+//       //NO ERRORS
+//       //Ex3  Dynamically creating the user-destination list items
+//       //Already created an empty list in the HTML to contain this
+//       const listItem = document.createElement("li");
+//       listItem.textContent = event.target.value;
 
-      document.getElementById("user-destinations").appendChild(listItem);
+//       document.getElementById("user-destinations").appendChild(listItem);
 
-      const city = event.target.value;
+//       const city = event.target.value;
 
-      listItem.setAttribute("data-city", city); //adding the city as an attribute to the list item, so we can use it later.
-      // console.log("the current value of city is: ", city);
+//       listItem.setAttribute("data-city", city); //adding the city as an attribute to the list item, so we can use it later.
+//       // console.log("the current value of city is: ", city);
 
-      const cityInput = city;
+//       const cityInput = city;
 
-      //EX 4 -fetches the weather data for cityInpu and parses it to the addDatatoGraph function
-      fetchCityWeatherData(cityInput)
-        .then((data) => {
-          console.log("cityWeatherData: ", data);
-          console.log("cityInput: ", cityInput);
-          addDataToGraph(data, cityInput);
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-        });
+//       //EX 4 -fetches the weather data for cityInpu and parses it to the addDatatoGraph function
+//       fetchCityWeatherData(cityInput)
+//         .then((data) => {
+//           console.log("cityWeatherData: ", data);
+//           console.log("cityInput: ", cityInput);
+//           addDataToGraph(data, cityInput);
+//         })
+//         .catch((error) => {
+//           console.error("Error:", error);
+//         });
 
-      document.getElementById("city-input").value = ""; //resets the city-input box to blank
+//       document.getElementById("city-input").value = ""; //resets the city-input box to blank
 
-      //Ex 5 -each list item gets a remove button that is an 'x'
-      const removeButton = document.createElement("button");
-      removeButton.textContent = "x";
-      removeButton.className = "remove-item";
-      listItem.appendChild(removeButton);
+//       //Ex 5 -each list item gets a remove button that is an 'x'
+//       const removeButton = document.createElement("button");
+//       removeButton.textContent = "x";
+//       removeButton.className = "remove-item";
+//       listItem.appendChild(removeButton);
 
-      //Ex 6 -Remove the city and data from the graph
-      //0702 LJ
-      removeButton.onclick = function () {
-        listItem.remove(); //removes the list item
+//       //Ex 6 -Remove the city and data from the graph
+//       //0702 LJ
+//       removeButton.onclick = function () {
+//         listItem.remove(); //removes the list item
 
-        const cityToRemove = listItem.getAttribute("data-city");
+//         const cityToRemove = listItem.getAttribute("data-city");
 
-        if (cityToRemove === homeCity) {
-          homeCity = null;
-          // home - cit;
-        }
+//         if (cityToRemove === homeCity) {
+//           homeCity = null;
+//           // home - cit;
+//         }
 
-        //deletes the city from the average and feels like temperature objects
-        delete average_temperatures[cityToRemove];
-        delete average_temperatures_feelslike[cityToRemove];
-        removeChartData(myChart, cityToRemove);
-      };
-    }
-  });
-});
+//         //deletes the city from the average and feels like temperature objects
+//         delete average_temperatures[cityToRemove];
+//         delete average_temperatures_feelslike[cityToRemove];
+//         removeChartData(myChart, cityToRemove);
+//       };
+//     }
+//   });
+// });
 
 ///////////////////////////////
 //0702 LJ

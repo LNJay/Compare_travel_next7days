@@ -12,8 +12,9 @@
   <!--   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.9/dist/autoComplete.min.js"></script>
   <!-- <script src="app.js" defer></script> -->
-  <datalist id="city-datalist">
+  <!-- <datalist id="city-datalist">
     <option value="Amsterdam">
     <option value="Athens">
     <option value="Barcelona">
@@ -28,7 +29,7 @@
     <option value="Prague">
     <option value="Rome">
     <option value="Venice">
-  </datalist>
+  </datalist> -->
 </head>
 
 <body>
@@ -37,11 +38,12 @@
     <div class=sidebar>
 
       <label for="home-city-input">Enter your home city: </label>
-      <input id="home-city-input" autoComplete="on" list="city-datalist" />
+      <input id="home-city-input" autoComplete="off"  />
+      
       <br>
       <br>
       <label for="city-input">Enter your destinations: </label>
-      <input id="city-input" autoComplete="on" list="city-datalist" />
+      <input id="city-input" autoComplete="off"  />
       <div id=city-error>
         <!--         LJ -->
       </div>
