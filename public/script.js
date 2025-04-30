@@ -435,98 +435,76 @@ function addDataToGraph(data, cityName) {
 
   //ADDS DATA TO THE CHART OR CREATES THE CHART IF NON-EXISTENT
 
-  //Case 1: Chart exists, call addDatasetToChart func to add extra data
-  if (myChart) {
-    // Update existing chart
-
-    addDatasetToChart(myChart, dailyData, cityName);
-  } else {
-    //Case 2: Create new chart
-
-    // const ctx = document.getElementById("myChart");
-    const ctx = document.createElement("canvas");
-    ctx.id = "myChart";
-    document.getElementById("chart-container").appendChild(ctx);
-
-    // let color = getRandomColor(); //0702 LJ
-    let color = createCityColor(cityName);
-
-    //Creates a new line chart picking up data from dataDaily
-    //dates are formatted and added to the labels on x-axis
-    //temperature is added as a solid line
-    //feels-like temperature is added as a dashed line
-
-    myChart = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: dailyData.day.map(formatDate),
-        datasets: [
-          {
-            label: `${cityName}`,
-            data: dailyData.temperature,
-            borderWidth: 3,
-            borderColor: color,
-
-            tension: 0.1
-          },
-          {
-            label: `${cityName} Feels Like`,
-            data: dailyData.temperature_feelslike,
-            borderWidth: 3,
-            borderColor: color,
-            borderDash: [5, 5],
-            borderDashLegend: [5, 5],
-            tension: 0.1,
-            fill: false
-          }
-        ]
-      },
-      options: {
-        // aspectRatio: 3.5,
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          title: {
-            display: true,
-            text: "Temperatures(°C) in the next Seven Days",
-            font: {
-              size: 16
-            }
-          },
-          legend: {
-            display: true,
-            labels: {
-              usePointStyle: true,
-              pointStyle: "line",
-              position: "right",
-              align: "center",
-              // Custom legend line drawing to show dashed line
-              generateLabels: (chart) => {
-                const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(
-                  chart
-                );
-                return originalLabels.map((label) => {
-                  const dataset = chart.data.datasets[label.datasetIndex];
-                  if (dataset.borderDash) {
-                    label.lineDash = dataset.borderDash;
-                  }
-                  return label;
-                });
-              }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: false
-          }
-        }
-      }
-    });
+  //Case 1: If Chart doesn't exist, create it
+  if (!myChart) {
+    createChart(dailyData) // Create the chart if it doesn't exist
   }
+
+  addDatasetToChart(myChart, dailyData, cityName); // Add the chart
 }
 
+function createChart(dailyData) {
+      // const ctx = document.getElementById("myChart");
+      const ctx = document.createElement("canvas");
+      ctx.id = "myChart";
+      document.getElementById("chart-container").appendChild(ctx);
+  
 
+  
+      //Creates a new line chart picking up data from dataDaily
+      //dates are formatted and added to the labels on x-axis
+      //temperature is added as a solid line
+      //feels-like temperature is added as a dashed line
+  
+      myChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: dailyData.day.map(formatDate),
+          datasets: []
+        },
+        options: {
+          // aspectRatio: 3.5,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: "Temperatures(°C) in the next Seven Days",
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              display: true,
+              labels: {
+                usePointStyle: true,
+                pointStyle: "line",
+                position: "right",
+                align: "center",
+                // Custom legend line drawing to show dashed line
+                generateLabels: (chart) => {
+                  const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(
+                    chart
+                  );
+                  return originalLabels.map((label) => {
+                    const dataset = chart.data.datasets[label.datasetIndex];
+                    if (dataset.borderDash) {
+                      label.lineDash = dataset.borderDash;
+                    }
+                    return label;
+                  });
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false
+            }
+          }
+        }
+      });
+}
 
 function addDatasetToChart(chart, data, cityName) {
   let color = createCityColor(cityName); //getRandomColor();//0702 LJ
